@@ -1,0 +1,15 @@
+FROM localhost/jdk-11
+
+USER main
+
+ARG MIRROR=https://artifacts.elastic.co
+ARG ES_VERSION=7.7.0
+
+RUN curl -Lso es.tar.gz "${MIRROR}/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz" \
+    && tar -xzf es.tar.gz \
+    && mv "elasticsearch-${ES_VERSION}" elasticsearch \
+    && rm es.tar.gz
+
+ENV ES_HOME /home/main/elasticsearch
+
+ENV PATH "${ES_HOME}/bin:$PATH"

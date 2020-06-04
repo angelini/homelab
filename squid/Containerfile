@@ -1,0 +1,14 @@
+FROM localhost/base
+
+RUN microdnf install --nodocs squid \
+    && microdnf clean all
+
+RUN rm /etc/squid/squid.conf
+
+COPY squid.conf /etc/squid/squid.conf
+
+USER main
+
+RUN squid -z
+
+ENTRYPOINT ["squid", "--foreground"]
