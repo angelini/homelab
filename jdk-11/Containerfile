@@ -1,4 +1,4 @@
-FROM localhost/base
+FROM localhost/base-cache
 
 RUN microdnf install --nodocs java-11-openjdk-devel \
     && microdnf clean all

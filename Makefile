@@ -35,19 +35,33 @@ update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 	${PRESTO_PATH}/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz \
 	${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz
 
-.PHONY: build-base build-squid build-jdk-8 build-jdk-11 build-hive
-.PHONY: run-base run-jdk-8 run-jdk-11 run-hive
+.PHONY: create-pod create-squid-certs
+.PHONY: build-base build-base-cache build-squid build-jdk-8 build-jdk-11 build-hive
+.PHONY: run-base run-base-cache run-squid makerun-jdk-8 run-jdk-11 run-hive
+
+create-pod:
+	podman pod create -n local
+
+create-squid-certs:
+	openssl req -new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 -extensions v3_ca \
+		-subj '/C=DE/ST=Berlin/L=Berlin/O=homelab/OU=/CN=local/' \
+		-keyout base/certs/squid-ca-cert.pem -out base/certs/squid-ca-cert.pem
 
 build-base:
 	podman build -f ./base/Containerfile -t base --network host
 
+build-base-cache:
+	podman build -f ./base/Containerfile -t base-cache --network host \
+		--build-arg "http_proxy=http://localhost:8001" \
+		--build-arg "https_proxy=http://localhost:8001"
+
 build-squid: build-base
 	podman build -f ./squid/Containerfile -t squid --network host
 
-build-jdk-8: build-base
+build-jdk-8: build-base-cache
 	podman build -f ./jdk-8/Containerfile -t jdk-8 --network host
 
-build-jdk-11: build-base
+build-jdk-11: build-base-cache
 	podman build -f ./jdk-11/Containerfile -t jdk-11 --network host
 
 build-hive: build-jdk-8
@@ -63,10 +77,16 @@ build-presto: build-jdk-11
 		--build-arg "MIRROR=${CURRENT_IP}:8080"
 
 run-base:
-	podman run -it localhost/base --network host
+	podman run --pod local \
+		-it localhost/base
+
+run-base-cache:
+	podman run --pod local \
+		-it localhost/base-cache
 
 run-squid:
-	podman run --expose 8001 --mount type=tmpfs,tmpfs-size=15G,destination=/mnt/data \
+	podman run --pod local \
+		--mount type=tmpfs,tmpfs-size=15G,destination=/mnt/data \
 		-it localhost/squid
 
 run-jdk-8:
@@ -82,5 +102,5 @@ run-elasticsearch:
 	podman run -it localhost/elasticsearch --network host
 
 run-presto:
-	podman run --init --mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data --network=host \
+	podman run --mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data --network host \
 		-it localhost/presto bash

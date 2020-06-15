@@ -7,8 +7,17 @@ RUN rm /etc/squid/squid.conf
 
 COPY squid.conf /etc/squid/squid.conf
 
-USER main
+RUN mkdir -p /etc/squid/certs \
+    && cp /etc/pki/ca-trust/source/anchors/squid-ca-cert.crt /etc/squid/certs/squid-ca-cert.pem \
+    && chown squid:squid /etc/squid/certs/squid-ca-cert.pem
 
-RUN squid -z
+USER squid
 
-ENTRYPOINT ["squid", "--foreground"]
+WORKDIR /var/spool/squid
+
+RUN /usr/lib64/squid/security_file_certgen -c -s /var/spool/squid/ssl_db -M 4MB
+
+COPY entrypoint.sh entrypoint.sh
+
+ENTRYPOINT ./entrypoint.sh
+# ENTRYPOINT bash

@@ -1,10 +1,17 @@
 FROM registry.fedoraproject.org/fedora-minimal:32
 
+COPY certs/squid-ca-cert.pem /etc/pki/ca-trust/source/anchors/squid-ca-cert.crt
+RUN update-ca-trust
+
+ARG http_proxy
+ARG https_proxy
+
 RUN microdnf install --nodocs curl procps tar \
     && microdnf clean all
 
 RUN groupadd --system --gid 1001 main \
     && useradd --no-log-init --system --create-home --gid main --uid 2001 main
+
 WORKDIR /home/main
 
 ENTRYPOINT bash

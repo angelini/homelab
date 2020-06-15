@@ -1,0 +1,2 @@
+base/certs/**
+!base/certs/.gitkeep
