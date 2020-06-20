@@ -10,6 +10,7 @@ MIRROR_ROOT := /opt/mirror
 HADOOP_PATH := ${MIRROR_ROOT}/hadoop/common/hadoop-${HADOOP_VERSION}
 HIVE_PATH := ${MIRROR_ROOT}/hive/hive-${HIVE_VERSION}
 PRESTO_PATH := ${MIRROR_ROOT}/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}
+PRESTO_CLI_PATH := ${MIRROR_ROOT}/maven2/com/facebook/presto/presto-cli/${PRESTO_VERSION}
 ES_PATH := ${MIRROR_ROOT}/downloads/elasticsearch/
 
 ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz:
@@ -22,31 +23,37 @@ ${HIVE_PATH}/apache-hive-${HIVE_VERSION}-bin.tar.gz:
 	curl -Lso "${HIVE_PATH}/apache-hive-${HIVE_VERSION}-bin.tar.gz" \
 		"http://apache.mirror.iphh.net/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz"
 
-${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz:
-	mkdir -p "${PRESTO_PATH}"
-	curl -Lso "${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz" \
-		"https://repo1.maven.org/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz"
-
 ${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz:
 	mkdir -p "${ES_PATH}"
 	curl -Lso "${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz" \
 		"https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-x86_64.tar.gz"
 
+${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz:
+	mkdir -p "${PRESTO_PATH}"
+	curl -Lso "${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz" \
+		"https://repo1.maven.org/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz"
+
+${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar:
+	mkdir -p "${PRESTO_CLI_PATH}"
+	curl -Lso "${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar" \
+		"https://repo1.maven.org/maven2/com/facebook/presto/presto-cli/${PRESTO_VERSION}/presto-cli-${PRESTO_VERSION}-executable.jar"
+
+
 update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 	${HIVE_PATH}/apache-hive-${HIVE_VERSION}-bin.tar.gz \
+	${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz \
 	${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz \
-	${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz
+	${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar
 
 .PHONY: create-pod start-mirror
-.PHONY: build-base build-jdk-8 build-jdk-11 build-hive build-beeline build-elasticsearch build-presto
-.PHONY: run-base run-jdk-8 run-jdk-11 run-hive run-beeline run-elasticsearch run-presto
+.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hive build-elasticsearch build-presto build-presto-cli
+.PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hive run-elasticsearch run-presto run-presto-cli
 
 start-mirror: update-mirror
-	mkdir -p ${MIRROR_ROOT}
 	python -m http.server 8080 --directory ${MIRROR_ROOT}
 
 create-pod:
-	podman pod create -n local
+	podman pod create -n local -p 8004:8004 -p 8002:8002
 
 build-base:
 	podman build -f ./base/Containerfile -t base --network host
@@ -57,12 +64,12 @@ build-jdk-8: build-base
 build-jdk-11: build-base
 	podman build -f ./jdk-11/Containerfile -t jdk-11 --network host
 
+build-postgresql: build-base
+	podman build -f ./postgresql/Containerfile -t postgresql --network host
+
 build-hive: build-jdk-8
 	podman build -f ./hive/Containerfile -t hive --network host \
 		--build-arg "MIRROR=${CURRENT_IP}:8080" --build-arg "HADOOP_VERSION=${HADOOP_VERSION}" --build-arg "HIVE_VERSION=${HIVE_VERSION}"
-
-build-beeline: build-hive
-	podman build -f ./beeline/Containerfile -t beeline --network host
 
 build-elasticsearch: build-jdk-11
 	podman build -f ./elasticsearch/Containerfile -t elasticsearch --network host \
@@ -70,6 +77,10 @@ build-elasticsearch: build-jdk-11
 
 build-presto: build-jdk-11
 	podman build -f ./presto/Containerfile -t presto --network host \
+		--build-arg "MIRROR=${CURRENT_IP}:8080"
+
+build-presto-cli: build-presto
+	podman build -f ./presto-cli/Containerfile -t presto-cli --network host \
 		--build-arg "MIRROR=${CURRENT_IP}:8080"
 
 run-base:
@@ -84,14 +95,15 @@ run-jdk-11:
 	podman run --pod local \
 		-it localhost/jdk-11
 
+run-postgresql:
+	podman run --pod local \
+		--mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data,tmpfs-mode=777 \
+		-it localhost/postgresql
+
 run-hive:
 	podman run --pod local \
 		--mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data \
 		-it localhost/hive
-
-run-beeline:
-	podman run --pod local \
-		-it localhost/beeline
 
 run-elasticsearch:
 	podman run --pod local \
@@ -100,4 +112,8 @@ run-elasticsearch:
 run-presto:
 	podman run --pod local --init \
 		--mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data \
-		-it localhost/presto bash
+		-it localhost/presto
+
+run-presto-cli:
+	podman run --pod local \
+		-it localhost/presto-cli

@@ -1,0 +1,15 @@
+FROM localhost/base
+
+RUN microdnf install --nodocs postgresql-server \
+    && microdnf clean all
+
+RUN chown -R main:main /var/run/postgresql
+
+COPY zoneinfo "/usr/share/zoneinfo"
+
+USER main
+
+COPY entrypoint.sh entrypoint.sh
+COPY postgresql.conf postgresql.conf
+
+ENTRYPOINT "./entrypoint.sh"

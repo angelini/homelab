@@ -1,12 +1,13 @@
 FROM localhost/jdk-11
 
-RUN microdnf install --nodocs python3 \
+RUN microdnf install --nodocs less python3 \
     && microdnf clean all
 
 USER main
 
 ARG MIRROR=https://repo1.maven.org/
 ARG PRESTO_VERSION=0.235.1
+ENV PRESTO_VERSION ${PRESTO_VERSION}
 
 RUN curl -Lso presto.tar.gz "${MIRROR}/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz" \
     && tar -xzf presto.tar.gz \
@@ -18,3 +19,5 @@ ENV PRESTO_HOME /home/main/presto
 COPY etc "${PRESTO_HOME}/etc"
 
 ENV PATH "${PRESTO_HOME}/bin:$PATH"
+
+ENTRYPOINT ["launcher", "run"]
