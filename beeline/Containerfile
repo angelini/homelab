@@ -1,0 +1,3 @@
+FROM localhost/hive
+
+ENTRYPOINT beeline

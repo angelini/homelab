@@ -8,6 +8,8 @@ USER main
 ARG MIRROR=http://apache.mirror.iphh.net
 ARG HADOOP_VERSION=3.2.1
 ARG HIVE_VERSION=3.1.2
+ENV HADOOP_VERSION ${HADOOP_VERSION}
+ENV HIVE_VERSION ${HIVE_VERSION}
 
 RUN curl -Lso hadoop.tar.gz "${MIRROR}/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz" \
     && tar -xzf hadoop.tar.gz \
@@ -21,8 +23,16 @@ RUN curl -Lso hive.tar.gz "${MIRROR}/hive/hive-${HIVE_VERSION}/apache-hive-${HIV
 
 ENV HADOOP_HOME /home/main/hadoop
 ENV HIVE_HOME /home/main/hive
+ENV METASTORE_HOME /home/main/hive
 
 RUN rm "${HIVE_HOME}/lib/guava-19.0.jar" \
     && cp "${HADOOP_HOME}/share/hadoop/common/lib/guava-27.0-jre.jar" "${HIVE_HOME}/lib/"
 
+COPY hive-site.xml "${HIVE_HOME}/conf/hive-site.xml"
+COPY metastore-site.xml "${METASTORE_HOME}/conf/metastore-site.xml"
+
+COPY entrypoint.sh entrypoint.sh
+
 ENV PATH "${HADOOP_HOME}/bin:${HIVE_HOME}/bin:$PATH"
+
+ENTRYPOINT "./entrypoint.sh"
