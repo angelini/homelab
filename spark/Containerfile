@@ -1,0 +1,22 @@
+FROM localhost/jdk-11
+
+USER main
+
+ARG MIRROR=http://apache.mirror.iphh.net
+ARG SPARK_VERSION=3.0.0
+ENV SPARK_VERSION ${SPARK_VERSION}
+
+RUN curl -Lso spark.tar.gz "${MIRROR}/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz" \
+    && tar -xzf spark.tar.gz \
+    && mv "spark-${SPARK_VERSION}-bin-hadoop3.2" spark \
+    && rm spark.tar.gz
+
+ENV SPARK_HOME /home/main/spark
+
+RUN rm -r "${SPARK_HOME}/conf"
+
+COPY conf "${SPARK_HOME}/conf"
+
+ENV PATH "${SPARK_HOME}/bin:$PATH"
+
+ENTRYPOINT bash
