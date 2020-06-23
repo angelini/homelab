@@ -1,6 +1,6 @@
 FROM localhost/jdk-8
 
-RUN microdnf install --nodocs postgresql postgresql-jdbc which \
+RUN microdnf install --nodocs postgresql postgresql-jdbc \
     && microdnf clean all
 
 USER main

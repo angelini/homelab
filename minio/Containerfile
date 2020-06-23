@@ -2,19 +2,20 @@ FROM localhost/base
 
 USER main
 
-ARG MIRROR=https://dl.min.io
-ARG MINIO_VERSION=2020-06-18T02-23-35Z
+ARG MIRROR
+ARG MINIO_VERSION=2020-06-22T03-12-50Z
 ENV MINIO_VERSION ${MINIO_VERSION}
 
 RUN mkdir bin \
-    && curl -Lso bin/minio "${MIRROR}/server/minio/release/linux-amd64/archive/minio.RELEASE.${MINIO_VERSION}" \
+    && curl -Lfso bin/minio "${MIRROR}/server/minio/release/linux-amd64/archive/minio.RELEASE.${MINIO_VERSION}" \
     && chmod +x bin/minio
 
 ENV PATH "/home/main/bin:$PATH"
 
+ENV MINIO_UPDATE off
 ENV MINIO_ACCESS_KEY minio_ak
 ENV MINIO_SECRET_KEY minio_sk
 
-ENTRYPOINT ["minio", "server", \
-            "--address", "0.0.0.0:8005", \
-            "/mnt/data"]
+COPY entrypoint.sh entrypoint.sh
+
+ENTRYPOINT "./entrypoint.sh"
