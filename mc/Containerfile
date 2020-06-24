@@ -1,0 +1,17 @@
+FROM localhost/base
+
+USER main
+
+ARG MIRROR
+ARG MC_VERSION
+ENV MC_VERSION ${MC_VERSION}
+
+RUN mkdir bin \
+    && curl -Lfso bin/mc "${MIRROR}/client/mc/release/linux-amd64/archive/mc.RELEASE.${MC_VERSION}" \
+    && chmod +x bin/mc
+
+ENV PATH "/home/main/bin:$PATH"
+
+RUN mc config host add minio http://localhost:8005 minio_ak minio_sk
+
+ENTRYPOINT bash

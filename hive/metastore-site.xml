@@ -2,7 +2,7 @@
 <configuration>
     <property>
         <name>metastore.warehouse.dir</name>
-        <value>file:///mnt/data</value>
+        <value>file:///mnt/data/hive</value>
     </property>
     <property>
         <name>metastore.thrift.port</name>

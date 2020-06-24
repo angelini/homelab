@@ -2,8 +2,9 @@ FROM localhost/jdk-11
 
 USER main
 
-ARG MIRROR=https://artifacts.elastic.co
-ARG ES_VERSION=7.7.0
+ARG MIRROR
+ARG ES_VERSION
+ENV ES_VERSION ${ES_VERSION}
 
 RUN curl -Lso es.tar.gz "${MIRROR}/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz" \
     && tar -xzf es.tar.gz \

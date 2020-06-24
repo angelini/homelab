@@ -1,11 +1,16 @@
 FROM localhost/jdk-11
 
+VOLUME /mnt/data
+
+RUN mkdir -p /mnt/data/presto \
+    && chown main:main /mnt/data/presto
+
 RUN microdnf install --nodocs less python3 \
     && microdnf clean all
 
 USER main
 
-ARG MIRROR=https://repo1.maven.org/
+ARG MIRROR
 ARG PRESTO_VERSION=0.235.1
 ENV PRESTO_VERSION ${PRESTO_VERSION}
 

@@ -1,5 +1,10 @@
 FROM localhost/jdk-8
 
+VOLUME /mnt/data
+
+RUN mkdir -p /mnt/data/hive \
+    && chown main:main /mnt/data/hive
+
 RUN microdnf install --nodocs postgresql postgresql-jdbc \
     && microdnf clean all
 
@@ -10,6 +15,8 @@ ARG HADOOP_VERSION=3.2.1
 ARG HIVE_VERSION=3.1.2
 ENV HADOOP_VERSION ${HADOOP_VERSION}
 ENV HIVE_VERSION ${HIVE_VERSION}
+
+RUN echo 1
 
 RUN curl -Lso hadoop.tar.gz "${MIRROR}/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz" \
     && tar -xzf hadoop.tar.gz \
