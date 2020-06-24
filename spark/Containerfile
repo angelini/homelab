@@ -12,9 +12,9 @@ ENV AWS_SDK_VERSION ${AWS_SDK_VERSION}
 ENV GUAVA_VERSION ${GUAVA_VERSION}
 ENV SPARK_VERSION ${SPARK_VERSION}
 
-RUN curl -Lso spark.tar.gz "${MIRROR}/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz" \
+RUN curl -Lso spark.tar.gz "${MIRROR}/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz" \
     && tar -xzf spark.tar.gz \
-    && mv "spark-${SPARK_VERSION}-bin-hadoop3.2" spark \
+    && mv "spark-${SPARK_VERSION}-bin-hadoop2.7" spark \
     && rm spark.tar.gz
 
 ENV SPARK_HOME /home/main/spark
@@ -22,8 +22,8 @@ ENV SPARK_HOME /home/main/spark
 RUN curl -Lso "${SPARK_HOME}/jars/hadoop-aws-${HADOOP_VERSION}.jar" \
         "${MIRROR}/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar"
 
-RUN curl -Lso "${SPARK_HOME}/jars/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar" \
-        "${MIRROR}/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar"
+RUN curl -Lso "${SPARK_HOME}/jars/aws-java-sdk-${AWS_SDK_VERSION}.jar" \
+        "${MIRROR}/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-${AWS_SDK_VERSION}.jar"
 
 RUN rm ${SPARK_HOME}/jars/guava*.jar \
     && curl -Lso "${SPARK_HOME}/jars/guava-${GUAVA_VERSION}.jar" \
@@ -35,4 +35,4 @@ COPY conf "${SPARK_HOME}/conf"
 
 ENV PATH "${SPARK_HOME}/bin:$PATH"
 
-ENTRYPOINT bash
+ENTRYPOINT ["spark-shell", "--driver-memory", "2g"]

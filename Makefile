@@ -1,10 +1,10 @@
-HADOOP_VERSION ?= 3.2.1
-AWS_SDK_VERSION ?= 1.11.807
+HADOOP_VERSION ?= 2.7.7
+AWS_SDK_VERSION ?= 1.7.4
 GUAVA_VERSION ?= 29.0
 HIVE_VERSION ?= 3.1.2
 PRESTO_VERSION ?= 0.235.1
 ES_VERSION ?= 7.7.0
-SPARK_VERSION ?= 3.0.0
+SPARK_VERSION ?= 2.4.6
 MINIO_VERSION ?= 2020-06-22T03-12-50Z
 MC_VERSION ?= 2020-06-20T00-18-43Z
 
@@ -35,8 +35,8 @@ ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz:
 ${HADOOP_AWS_PATH}/hadoop-aws-${HADOOP_VERSION}.jar:
 	$(call download_file,${HADOOP_AWS_PATH},hadoop-aws-${HADOOP_VERSION}.jar,https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar)
 
-${AWS_SDK_PATH}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar:
-	$(call download_file,${AWS_SDK_PATH},aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar,https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar)
+${AWS_SDK_PATH}/aws-java-sdk-${AWS_SDK_VERSION}.jar:
+	$(call download_file,${AWS_SDK_PATH},aws-java-sdk-${AWS_SDK_VERSION}.jar,https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk/${AWS_SDK_VERSION}/aws-java-sdk-${AWS_SDK_VERSION}.jar)
 
 ${GUAVA_PATH}/guava-${GUAVA_VERSION}-jre.jar:
 	$(call download_file,${GUAVA_PATH},guava-${GUAVA_VERSION}-jre.jar,https://repo1.maven.org/maven2/com/google/guava/guava/${GUAVA_VERSION}-jre/guava-${GUAVA_VERSION}-jre.jar)
@@ -53,8 +53,8 @@ ${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar:
 ${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz:
 	$(call download_file,${ES_PATH},elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz,https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz)
 
-${SPARK_PATH}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz:
-	$(call download_file,${SPARK_PATH},spark-${SPARK_VERSION}-bin-hadoop3.2.tgz,http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz)
+${SPARK_PATH}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz:
+	$(call download_file,${SPARK_PATH},spark-${SPARK_VERSION}-bin-hadoop2.7.tgz,http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz)
 
 ${MINIO_PATH}/minio.RELEASE.${MINIO_VERSION}:
 	$(call download_file,${MINIO_PATH},minio.RELEASE.${MINIO_VERSION},https://dl.min.io/server/minio/release/linux-amd64/archive/minio.RELEASE.${MINIO_VERSION})
@@ -72,13 +72,13 @@ ${TAXI_DATA_PATH}:
 
 update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 	${HADOOP_AWS_PATH}/hadoop-aws-${HADOOP_VERSION}.jar \
-	${AWS_SDK_PATH}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar \
+	${AWS_SDK_PATH}/aws-java-sdk-${AWS_SDK_VERSION}.jar \
 	${GUAVA_PATH}/guava-${GUAVA_VERSION}-jre.jar \
 	${HIVE_PATH}/apache-hive-${HIVE_VERSION}-bin.tar.gz \
 	${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz \
 	${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar \
 	${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz \
-	${SPARK_PATH}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz \
+	${SPARK_PATH}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz \
 	${MINIO_PATH}/minio.RELEASE.${MINIO_VERSION} \
 	${MC_PATH}/mc.RELEASE.${MC_VERSION} \
 	${TAXI_DATA_PATH}
