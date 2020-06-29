@@ -1,5 +1,5 @@
 HADOOP_VERSION ?= 3.2.1
-AWS_SDK_VERSION ?= 1.11.807
+AWS_SDK_VERSION ?= 1.11.811
 GUAVA_VERSION ?= 29.0
 HIVE_VERSION ?= 3.1.2
 PRESTO_VERSION ?= 0.235.1
@@ -53,8 +53,8 @@ ${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar:
 ${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz:
 	$(call download_file,${ES_PATH},elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz,https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz)
 
-${SPARK_PATH}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz:
-	$(call download_file,${SPARK_PATH},spark-${SPARK_VERSION}-bin-hadoop3.2.tgz,http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz)
+${SPARK_PATH}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz:
+	$(call download_file,${SPARK_PATH},spark-${SPARK_VERSION}-bin-without-hadoop.tgz,http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz)
 
 ${MINIO_PATH}/minio.RELEASE.${MINIO_VERSION}:
 	$(call download_file,${MINIO_PATH},minio.RELEASE.${MINIO_VERSION},https://dl.min.io/server/minio/release/linux-amd64/archive/minio.RELEASE.${MINIO_VERSION})
@@ -78,25 +78,31 @@ update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 	${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz \
 	${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar \
 	${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz \
-	${SPARK_PATH}/spark-${SPARK_VERSION}-bin-hadoop3.2.tgz \
+	${SPARK_PATH}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz \
 	${MINIO_PATH}/minio.RELEASE.${MINIO_VERSION} \
 	${MC_PATH}/mc.RELEASE.${MC_VERSION} \
 	${TAXI_DATA_PATH}
 
 .PHONY: create-pod start-mirror
-.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hive build-elasticsearch build-presto build-presto-cli build-spark build-minio build-mc
-.PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hive run-elasticsearch run-presto run-presto-cli run-spark run-minio run-mc
+.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hadoop build-hive build-elasticsearch build-presto build-presto-cli build-spark build-minio build-mc
+.PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hadoop run-hive run-elasticsearch run-presto run-presto-cli run-spark run-minio run-mc
 .PHONY: attach-base attach-spark attach-minio
 
 start-mirror: update-mirror
+	dnf -y makecache --setopt=cachedir=/opt/dnfcache
 	python -m http.server 8080 --directory ${MIRROR_ROOT}
 
 create-pod:
 	podman pod create -n local -p 8002:8002 -p 8004:8004 -p 8005:8005
 
 define build
-	podman build -f "./$(1)/Containerfile" -t "$(1)" --network host $(2)
+	podman build --file "./$(1)/Containerfile" --tag "$(1)" --network host $(2)
 endef
+# TODO: Fix dnf metadata cache
+# --volume /opt/dnfcache:/var/cache/dnf:O
+
+build-test:
+	$(call build,test,)
 
 build-base:
 	$(call build,base,)
@@ -110,26 +116,29 @@ build-jdk-11: build-base
 build-postgresql: build-base
 	$(call build,postgresql,)
 
-build-hive: build-jdk-8
+build-hadoop: build-jdk-8
+	$(call build,hadoop, \
+		--build-arg "MIRROR=localhost:8080" --build-arg "HADOOP_VERSION=${HADOOP_VERSION}" --build-arg "AWS_SDK_VERSION=${AWS_SDK_VERSION}")
+
+build-hive: build-hadoop
 	$(call build,hive, \
 		--build-arg "MIRROR=localhost:8080" --build-arg "HADOOP_VERSION=${HADOOP_VERSION}" --build-arg "HIVE_VERSION=${HIVE_VERSION}")
 
 build-elasticsearch: build-jdk-11
 	$(call build,elasticsearch, \
-		--build-arg "MIRROR=localhost:8080" --build-arg "ES_VERSION=${ES_VERSION}"
+		--build-arg "MIRROR=localhost:8080" --build-arg "ES_VERSION=${ES_VERSION}")
 
 build-presto: build-jdk-11
 	$(call build,presto, \
-		--build-arg "MIRROR=localhost:8080" --build-arg "PRESTO_VERSION=${PRESTO_VERSION}"
+		--build-arg "MIRROR=localhost:8080" --build-arg "PRESTO_VERSION=${PRESTO_VERSION}")
 
 build-presto-cli: build-presto
 	$(call build,presto-cli, \
 		--build-arg "MIRROR=localhost:8080")
 
-build-spark: build-jdk-11
+build-spark: build-hadoop
 	$(call build,spark, \
-		--build-arg "MIRROR=localhost:8080" --build-arg "HADOOP_VERSION=${HADOOP_VERSION}" --build-arg "AWS_SDK_VERSION=${AWS_SDK_VERSION}" \
-		--build-arg "GUAVA_VERSION=${GUAVA_VERSION}"  --build-arg "SPARK_VERSION=${SPARK_VERSION}")
+		--build-arg "MIRROR=localhost:8080" --build-arg "SPARK_VERSION=${SPARK_VERSION}")
 
 build-minio: build-base
 	$(call build,minio, \
@@ -139,59 +148,60 @@ build-mc: build-base
 	$(call build,mc, \
 		--build-arg "MIRROR=localhost:8080" --build-arg "MC_VERSION=${MC_VERSION}")
 
+define run
+	podman run --name $(1) --pod local $(2) --rm -it localhost/$(1)
+endef
+comma := ,
+
 run-base:
-	podman run --name base --pod local \
-		--rm -it localhost/base
+	$(call run,base,)
 
 run-jdk-8:
-	podman run --name jdk-8 --pod local \
-		--rm -it localhost/jdk-8
+	$(call run,jdk-8,)
 
 run-jdk-11:
-	podman run --name jdk-11 --pod local \
-		--rm -it localhost/jdk-11
+	$(call run,jdk-11,)
 
 run-postgresql:
-	podman run --name postgresql --pod local \
-		--mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data,tmpfs-mode=777 \
-		--rm -it localhost/postgresql
+	$(call run,postgresql, \
+		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data$(comma)tmpfs-mode=777)
+
+run-hadoop:
+	$(call run,hadoop,)
 
 run-hive:
-	podman run --name hive --pod local \
-		--mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data \
-		--rm -it localhost/hive
+	$(call run,hive, \
+		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data)
 
 run-elasticsearch:
-	podman run --name elasticsearch --pod local \
-		--rm -it localhost/elasticsearch
+	$(call run,elasticsearch,)
 
 run-presto:
-	podman run --name presto --pod local --init \
-		--mount type=tmpfs,tmpfs-size=4G,destination=/mnt/data \
-		--rm -it localhost/presto
+	$(call run,presto, \
+		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data)
 
 run-presto-cli:
-	podman run --name presto-cli --pod local \
-		--rm -it localhost/presto-cli
+	$(call run,presto-cli,)
 
 run-spark:
-	podman run --name spark --pod local \
-		--rm -it localhost/spark
+	$(call run,spark,)
 
 run-minio:
-	podman run --name minio --pod local \
-		--mount type=volume,source=minio-data,target=/mnt/data \
-		--rm -it localhost/minio
+	$(call run,minio, \
+		--mount type=volume$(comma)source=minio-data$(comma)target=/mnt/data)
 
 run-mc:
-	podman run --name mc --pod local \
-		--rm -it localhost/mc
+	$(call run,mc,)
+
+define attach
+	podman exec -it $(1) bash
+endef
 
 attach-base:
-	podman exec -it base bash
+	$(call attach,base)
 
 attach-spark:
-	podman exec -it spark bash
+	$(call attach,spark)
 
 attach-minio:
-	podman exec -it minio bash
+	$(call attach,minio)

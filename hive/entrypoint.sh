@@ -7,10 +7,12 @@ function database_exists() {
   psql -h localhost -p 8002 -lqt | cut -d \| -f 1 | grep -wq $1
 }
 
-for lib in ${HADOOP_HOME}/share/hadoop/**/*.jar; do
-    echo "hadoop lib ${lib}"
-    export CLASSPATH="${CLASSPATH}:${lib}"
-done
+# for lib in ${HADOOP_HOME}/share/hadoop/**/*.jar; do
+#     echo "hadoop lib ${lib}"
+#     export CLASSPATH="${CLASSPATH}:${lib}"
+# done
+
+export CLASSPATH="${CLASSPATH}:$(hadoop classpath)"
 
 for lib in ${HIVE_HOME}/lib/**/*.jar; do
     echo "hive lib ${lib}"

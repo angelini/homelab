@@ -1,1 +1,32 @@
 FROM localhost/jdk-8
+
+RUN microdnf install --nodocs snappy \
+    && microdnf clean all
+
+USER main
+
+ARG MIRROR
+
+ARG HADOOP_VERSION
+ENV HADOOP_VERSION ${HADOOP_VERSION}
+RUN curl -Lfso hadoop.tar.gz "${MIRROR}/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz" \
+    && tar -xzf hadoop.tar.gz \
+    && mv "hadoop-${HADOOP_VERSION}" hadoop \
+    && rm hadoop.tar.gz
+
+ENV HADOOP_HOME /home/main/hadoop
+
+RUN curl -Lso "${HADOOP_HOME}/share/hadoop/common/lib/hadoop-aws-${HADOOP_VERSION}.jar" \
+        "${MIRROR}/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar"
+
+ARG AWS_SDK_VERSION
+ENV AWS_SDK_VERSION ${AWS_SDK_VERSION}
+RUN curl -Lso "${HADOOP_HOME}/share/hadoop/common/lib/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar" \
+        "${MIRROR}/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar"
+
+COPY core-site.xml "${HADOOP_HOME}/etc/hadoop/core-site.xml"
+COPY log4j.properties "${HADOOP_HOME}/etc/hadoop/log4j.properties"
+
+ENV PATH "${HADOOP_HOME}/bin:$PATH"
+
+ENTRYPOINT bash
