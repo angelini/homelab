@@ -1,8 +1,10 @@
 FROM localhost/presto
 
+USER main
+
 ARG MIRROR
 
-RUN curl -Lso "${PRESTO_HOME}/bin/presto" "${MIRROR}/maven2/com/facebook/presto/presto-cli/${PRESTO_VERSION}/presto-cli-${PRESTO_VERSION}-executable.jar" \
+RUN curl -Lfso "${PRESTO_HOME}/bin/presto" "${MIRROR}/maven2/com/facebook/presto/presto-cli/${PRESTO_VERSION}/presto-cli-${PRESTO_VERSION}-executable.jar" \
     && chmod +x "${PRESTO_HOME}/bin/presto"
 
 ENTRYPOINT ["presto", \

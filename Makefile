@@ -1,3 +1,5 @@
+MAKEFLAGS += -j8
+
 HADOOP_VERSION ?= 3.2.1
 AWS_SDK_VERSION ?= 1.11.811
 GUAVA_VERSION ?= 29.0
@@ -84,7 +86,7 @@ update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 	${TAXI_DATA_PATH}
 
 .PHONY: create-pod start-mirror
-.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hadoop build-hive build-elasticsearch build-presto build-presto-cli build-spark build-minio build-mc
+.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hadoop build-hive build-elasticsearch build-presto build-presto-cli build-spark build-minio build-mc build-all
 .PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hadoop run-hive run-elasticsearch run-presto run-presto-cli run-spark run-minio run-mc
 .PHONY: attach-base attach-hive attach-spark attach-minio
 
@@ -96,13 +98,8 @@ create-pod:
 	podman pod create -n local -p 8002:8002 -p 8004:8004 -p 8005:8005
 
 define build
-	podman build --file "./$(1)/Containerfile" --tag "$(1)" --network host $(2)
+	podman build --file "./$(1)/Containerfile" --tag "$(1)" --network host $(2) --volume "/opt/dnfcache:/var/cache/dnf:O"
 endef
-# TODO: Fix dnf metadata cache
-# --volume /opt/dnfcache:/var/cache/dnf:O
-
-build-test:
-	$(call build,test,)
 
 build-base:
 	$(call build,base,)
@@ -147,6 +144,8 @@ build-minio: build-base
 build-mc: build-base
 	$(call build,mc, \
 		--build-arg "MIRROR=localhost:8080" --build-arg "MC_VERSION=${MC_VERSION}")
+
+build-all: build-postgresql build-hive build-elasticsearch build-presto-cli build-spark build-minio build-mc
 
 define run
 	podman run --name $(1) --pod local $(2) --rm -it localhost/$(1)

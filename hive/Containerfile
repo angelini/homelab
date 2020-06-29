@@ -7,8 +7,8 @@ VOLUME /mnt/data
 RUN mkdir -p /mnt/data/hive \
     && chown main:main /mnt/data/hive
 
-RUN microdnf install --nodocs postgresql postgresql-jdbc \
-    && microdnf clean all
+RUN dnf install -y --nodocs postgresql postgresql-jdbc \
+    && dnf clean all
 
 USER main
 
@@ -16,7 +16,7 @@ ARG MIRROR
 
 ARG HIVE_VERSION
 ENV HIVE_VERSION ${HIVE_VERSION}
-RUN curl -Lso hive.tar.gz "${MIRROR}/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz" \
+RUN curl -Lfso hive.tar.gz "${MIRROR}/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz" \
     && tar -xzf hive.tar.gz \
     && mv "apache-hive-${HIVE_VERSION}-bin" hive \
     && rm hive.tar.gz
@@ -35,3 +35,4 @@ ENV PATH "${HADOOP_HOME}/bin:${HIVE_HOME}/bin:$PATH"
 COPY entrypoint.sh entrypoint.sh
 
 ENTRYPOINT "./entrypoint.sh"
+# ENTRYPOINT bash

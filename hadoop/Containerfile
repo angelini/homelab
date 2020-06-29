@@ -1,11 +1,15 @@
 FROM localhost/jdk-8
 
-RUN microdnf install --nodocs snappy \
-    && microdnf clean all
+USER root
+
+RUN dnf install -y --nodocs snappy \
+    && dnf clean all
 
 USER main
 
 ARG MIRROR
+
+RUN echo 3
 
 ARG HADOOP_VERSION
 ENV HADOOP_VERSION ${HADOOP_VERSION}
@@ -16,12 +20,12 @@ RUN curl -Lfso hadoop.tar.gz "${MIRROR}/hadoop/common/hadoop-${HADOOP_VERSION}/h
 
 ENV HADOOP_HOME /home/main/hadoop
 
-RUN curl -Lso "${HADOOP_HOME}/share/hadoop/common/lib/hadoop-aws-${HADOOP_VERSION}.jar" \
+RUN curl -Lfso "${HADOOP_HOME}/share/hadoop/common/lib/hadoop-aws-${HADOOP_VERSION}.jar" \
         "${MIRROR}/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar"
 
 ARG AWS_SDK_VERSION
 ENV AWS_SDK_VERSION ${AWS_SDK_VERSION}
-RUN curl -Lso "${HADOOP_HOME}/share/hadoop/common/lib/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar" \
+RUN curl -Lfso "${HADOOP_HOME}/share/hadoop/common/lib/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar" \
         "${MIRROR}/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_SDK_VERSION}/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar"
 
 COPY core-site.xml "${HADOOP_HOME}/etc/hadoop/core-site.xml"

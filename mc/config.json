@@ -1,0 +1,12 @@
+{
+    "version": "9",
+    "hosts": {
+        "minio": {
+            "url": "http://127.0.0.1:8005",
+            "accessKey": "minio_ak",
+            "secretKey": "minio_sk",
+            "api": "s3v4",
+            "lookup": "auto"
+        }
+    }
+}

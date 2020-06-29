@@ -1,7 +1,9 @@
 FROM localhost/base
 
-RUN microdnf install --nodocs postgresql-server \
-    && microdnf clean all
+USER root
+
+RUN dnf install -y --nodocs postgresql-server \
+    && dnf clean all
 
 RUN chown -R main:main /var/run/postgresql
 

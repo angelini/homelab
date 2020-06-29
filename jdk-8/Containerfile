@@ -1,6 +1,8 @@
 FROM localhost/base
 
-RUN microdnf install --nodocs java-1.8.0-openjdk-devel \
-    && microdnf clean all
+USER root
+
+RUN dnf install -y --nodocs java-1.8.0-openjdk-devel \
+    && dnf clean all
 
 ENV JAVA_HOME /usr/lib/jvm/java

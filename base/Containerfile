@@ -1,17 +1,11 @@
-FROM registry.fedoraproject.org/fedora-minimal:32
+FROM fedora:32
 
-RUN microdnf install --nodocs curl findutils procps which tar \
-    && microdnf clean all
+RUN dnf install -y --nodocs findutils procps which \
+    && dnf clean all
 
 RUN groupadd --system --gid 1001 main \
     && useradd --no-log-init --system --create-home --gid main --uid 2001 main
 
 WORKDIR /home/main
-
-RUN echo "$(ls /var/cache/yum/solv)"
-
-RUN microdnf install --nodocs  cowsay
-
-RUN echo "$(ls /var/cache/yum/solv)"
 
 ENTRYPOINT bash

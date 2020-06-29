@@ -1,5 +1,7 @@
 FROM localhost/base
 
+USER root
+
 VOLUME /mnt/data
 
 RUN mkdir -p /mnt/data/minio \

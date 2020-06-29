@@ -1,0 +1,128 @@
+val df = spark.read
+    .option("inferSchema", "true")
+    .option("header", "true")
+    .csv("s3a://b001/yellow_tripdata_2019-*.csv")
+    .withColumn("pickup_ts", to_timestamp($"tpep_pickup_datetime"))
+    .withColumn("pickup_year", date_format($"pickup_ts", "y"))
+    .withColumn("pickup_month", date_format($"pickup_ts", "M"))
+
+val df2 = spark.read
+    .option("inferSchema", "true")
+    .option("header", "true")
+    .csv("s3a://b001/yellow_tripdata_2019-02.csv")
+    .withColumn("pickup_ts", to_timestamp($"tpep_pickup_datetime"))
+    .withColumn("pickup_year", date_format($"pickup_ts", "y"))
+    .withColumn("pickup_month", date_format($"pickup_ts", "M"))
+
+df.where($"pickup_year" === 2019)
+    .where($"pickup_month".isin(1, 2, 3, 4, 5, 6))
+    .repartition($"pickup_year", $"pickup_month")
+    .write
+    .partitionBy("pickup_year", "pickup_month")
+    .parquet("s3a://b001/tripdata")
+
+create table tripdata (
+	VendorID int,
+	tpep_pickup_datetime varchar,
+	tpep_dropoff_datetime varchar,
+	passenger_count int,
+	trip_distance double,
+	RatecodeID int,
+	store_and_fwd_flag varchar,
+	PULocationID int,
+	DOLocationID int,
+	payment_type int,
+	fare_amount double,
+	extra double,
+	mta_tax double,
+	tip_amount double,
+	tolls_amount double,
+	improvement_surcharge double,
+	total_amount double,
+	congestion_surcharge double,
+	pickup_ts timestamp,
+	pickup_year varchar,
+	pickup_month varchar
+) with (
+	external_location = 's3a://b001/tripdata',
+	format = 'PARQUET'
+)
+
+CREATE EXTERNAL TABLE IF NOT EXISTS default.tripdata (
+    VendorID int,
+	tpep_pickup_datetime string,
+	tpep_dropoff_datetime string,
+	passenger_count int,
+	trip_distance double,
+	RatecodeID int,
+	store_and_fwd_flag string,
+	PULocationID int,
+	DOLocationID int,
+	payment_type int,
+	fare_amount double,
+	extra double,
+	mta_tax double,
+	tip_amount double,
+	tolls_amount double,
+	improvement_surcharge double,
+	total_amount double,
+	congestion_surcharge double,
+	pickup_ts timestamp,
+	pickup_year string,
+	pickup_month string
+) STORED AS PARQUET LOCATION 's3a://b001/tripdata';
+
+CREATE EXTERNAL TABLE IF NOT EXISTS default.tripdata (VendorID int, tpep_pickup_datetime string, tpep_dropoff_datetime string, passenger_count int, trip_distance double, RatecodeID int, store_and_fwd_flag string,PULocationID int,DOLocationID int,payment_type int,fare_amount double,extra double,mta_tax double,tip_amount double,tolls_amount double,improvement_surcharge double,total_amount double,congestion_surcharge double,pickup_ts timestamp,pickup_year string, pickup_month string) STORED AS PARQUET LOCATION 's3a://b001/tripdata';
+
+
+CREATE TABLE hive.default.tripdata (
+   vendorid integer,
+   tpep_pickup_datetime varchar,
+   tpep_dropoff_datetime varchar,
+   passenger_count integer,
+   trip_distance double,
+   ratecodeid integer,
+   store_and_fwd_flag varchar,
+   pulocationid integer,
+   dolocationid integer,
+   payment_type integer,
+   fare_amount double,
+   extra double,
+   mta_tax double,
+   tip_amount double,
+   tolls_amount double,
+   improvement_surcharge double,
+   total_amount double,
+   congestion_surcharge double,
+   pickup_ts timestamp,
+   pickup_year varchar,
+   pickup_month varchar
+)
+WITH (
+   external_location = 's3a://b001/tripdata',
+   format = 'PARQUET',
+   partitioned_by = ARRAY['pickup_year', 'pickup_month']
+)
+
+alter table tripdata add partition (pickup_year='2019', pickup_month='1') location 's3a://b001/tripdata/pickup_year=2019/pickup
+_month=1';
+alter table tripdata add partition (pickup_year='2019', pickup_month='2') location 's3a://b001/tripdata/pickup_year=2019/pickup
+_month=2';
+alter table tripdata add partition (pickup_year='2019', pickup_month='3') location 's3a://b001/tripdata/pickup_year=2019/pickup
+_month=3';
+alter table tripdata add partition (pickup_year='2019', pickup_month='4') location 's3a://b001/tripdata/pickup_year=2019/pickup
+_month=4';
+alter table tripdata add partition (pickup_year='2019', pickup_month='5') location 's3a://b001/tripdata/pickup_year=2019/pickup
+_month=5';
+alter table tripdata add partition (pickup_year='2019', pickup_month='6') location 's3a://b001/tripdata/pickup_year=2019/pickup
+_month=6';
+
+# full rebuild -j 1
+real    8m2.723s
+user    3m18.241s
+sys     1m11.495s
+
+# build-hadoop no tmpfs
+real    0m56.787s
+user    0m41.333s
+sys     0m16.464s
