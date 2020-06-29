@@ -86,7 +86,7 @@ update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 .PHONY: create-pod start-mirror
 .PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hadoop build-hive build-elasticsearch build-presto build-presto-cli build-spark build-minio build-mc
 .PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hadoop run-hive run-elasticsearch run-presto run-presto-cli run-spark run-minio run-mc
-.PHONY: attach-base attach-spark attach-minio
+.PHONY: attach-base attach-hive attach-spark attach-minio
 
 start-mirror: update-mirror
 	dnf -y makecache --setopt=cachedir=/opt/dnfcache
@@ -122,7 +122,7 @@ build-hadoop: build-jdk-8
 
 build-hive: build-hadoop
 	$(call build,hive, \
-		--build-arg "MIRROR=localhost:8080" --build-arg "HADOOP_VERSION=${HADOOP_VERSION}" --build-arg "HIVE_VERSION=${HIVE_VERSION}")
+		--build-arg "MIRROR=localhost:8080" --build-arg "HIVE_VERSION=${HIVE_VERSION}")
 
 build-elasticsearch: build-jdk-11
 	$(call build,elasticsearch, \
@@ -199,6 +199,9 @@ endef
 
 attach-base:
 	$(call attach,base)
+
+attach-hive:
+	$(call attach,hive)
 
 attach-spark:
 	$(call attach,spark)

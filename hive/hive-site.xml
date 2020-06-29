@@ -9,6 +9,11 @@
         <value>NOSASL</value>
     </property>
     <property>
+        <name>hive.metastore.warehouse.dir</name>
+        <value>s3a://b001/warehouse</value>
+    </property>
+
+    <property>
         <name>javax.jdo.option.ConnectionURL</name>
         <value>jdbc:postgresql://localhost:8002/metastore</value>
     </property>
@@ -19,5 +24,17 @@
     <property>
         <name>javax.jdo.option.ConnectionUserName</name>
         <value>main</value>
+    </property>
+    <property>
+        <name>datanucleus.autoStartMechanismMode</name>
+        <value>checked</value>
+    </property>
+    <property>
+        <name>datanucleus.autoStartMechanism</name>
+        <value>SchemaTable</value>
+    </property>
+    <property>
+        <name>datanucleus.storeManagerType</name>
+        <value>rdbms</value>
     </property>
 </configuration>
