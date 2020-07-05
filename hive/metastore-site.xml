@@ -2,7 +2,7 @@
 <configuration>
     <property>
         <name>metastore.warehouse.dir</name>
-        <value>file:///mnt/data/hive</value>
+        <value>s3a://b001/hive</value>
     </property>
     <property>
         <name>metastore.thrift.port</name>
@@ -15,5 +15,9 @@
     <property>
         <name>metastore.expression.proxy</name>
         <value>org.apache.hadoop.hive.metastore.DefaultPartitionExpressionProxy</value>
+    </property>
+    <property>
+        <name>metastore.storage.schema.reader.impl</name>
+        <value>org.apache.hadoop.hive.metastore.SerDeStorageSchemaReader</value>
     </property>
 </configuration>

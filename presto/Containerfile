@@ -13,18 +13,21 @@ RUN dnf install -y --nodocs less python3 \
 USER main
 
 ARG MIRROR
+
 ARG PRESTO_VERSION=0.235.1
 ENV PRESTO_VERSION ${PRESTO_VERSION}
-
 RUN curl -Lfso presto.tar.gz "${MIRROR}/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz" \
     && tar -xzf presto.tar.gz \
     && mv "presto-server-${PRESTO_VERSION}" presto \
     && rm presto.tar.gz
 
+ENV VENV_HOME /home/main/venv
 ENV PRESTO_HOME /home/main/presto
+
+RUN python3 -m venv "${VENV_HOME}"
 
 COPY etc "${PRESTO_HOME}/etc"
 
-ENV PATH "${PRESTO_HOME}/bin:$PATH"
+ENV PATH "${PATH}:${PRESTO_HOME}/bin:${VENV_HOME}/bin"
 
 ENTRYPOINT ["launcher", "run"]

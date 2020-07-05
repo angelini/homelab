@@ -4,7 +4,7 @@ HADOOP_VERSION ?= 3.2.1
 AWS_SDK_VERSION ?= 1.11.811
 GUAVA_VERSION ?= 29.0
 HIVE_VERSION ?= 3.1.2
-PRESTO_VERSION ?= 0.235.1
+PRESTO_VERSION ?= 337
 ES_VERSION ?= 7.7.0
 SPARK_VERSION ?= 3.0.0
 MINIO_VERSION ?= 2020-06-22T03-12-50Z
@@ -47,10 +47,10 @@ ${HIVE_PATH}/apache-hive-${HIVE_VERSION}-bin.tar.gz:
 	$(call download_file,${HIVE_PATH},apache-hive-${HIVE_VERSION}-bin.tar.gz,http://apache.mirror.iphh.net/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz)
 
 ${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz:
-	$(call download_file,${PRESTO_PATH},presto-server-${PRESTO_VERSION}.tar.gz,https://repo1.maven.org/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz)
+	$(call download_file,${PRESTO_PATH},presto-server-${PRESTO_VERSION}.tar.gz,https://repo1.maven.org/maven2/io/prestosql/presto-server/${PRESTO_VERSION}/presto-server-${PRESTO_VERSION}.tar.gz)
 
 ${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar:
-	$(call download_file,${PRESTO_CLI_PATH},presto-cli-${PRESTO_VERSION}-executable.jar,https://repo1.maven.org/maven2/com/facebook/presto/presto-cli/${PRESTO_VERSION}/presto-cli-${PRESTO_VERSION}-executable.jar)
+	$(call download_file,${PRESTO_CLI_PATH},presto-cli-${PRESTO_VERSION}-executable.jar,https://repo1.maven.org/maven2/io/prestosql/presto-cli/${PRESTO_VERSION}/presto-cli-${PRESTO_VERSION}-executable.jar)
 
 ${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz:
 	$(call download_file,${ES_PATH},elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz,https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz)
@@ -95,7 +95,7 @@ start-mirror: update-mirror
 	python -m http.server 8080 --directory ${MIRROR_ROOT}
 
 create-pod:
-	podman pod create -n local -p 8002:8002 -p 8004:8004 -p 8005:8005
+	podman pod create -n local -p 8002:8002 -p 8003:8003 -p 8004:8004 -p 8005:8005
 
 define build
 	podman build --file "./$(1)/Containerfile" --tag "$(1)" --network host $(2) --volume "/opt/dnfcache:/var/cache/dnf:O"
@@ -148,49 +148,49 @@ build-mc: build-base
 build-all: build-postgresql build-hive build-elasticsearch build-presto-cli build-spark build-minio build-mc
 
 define run
-	podman run --name $(1) --pod local $(2) --rm -it localhost/$(1)
+	podman run --name $(1) --pod local $(2) --rm -it localhost/$(1) $(3)
 endef
 comma := ,
 
 run-base:
-	$(call run,base,)
+	$(call run,base)
 
 run-jdk-8:
-	$(call run,jdk-8,)
+	$(call run,jdk-8)
 
 run-jdk-11:
-	$(call run,jdk-11,)
+	$(call run,jdk-11)
 
 run-postgresql:
 	$(call run,postgresql, \
 		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data$(comma)tmpfs-mode=777)
 
 run-hadoop:
-	$(call run,hadoop,)
+	$(call run,hadoop)
 
 run-hive:
 	$(call run,hive, \
 		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data)
 
 run-elasticsearch:
-	$(call run,elasticsearch,)
+	$(call run,elasticsearch)
 
 run-presto:
 	$(call run,presto, \
 		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data)
 
 run-presto-cli:
-	$(call run,presto-cli,)
+	$(call run,presto-cli,,$(ARGS))
 
 run-spark:
-	$(call run,spark,)
+	$(call run,spark)
 
 run-minio:
 	$(call run,minio, \
 		--mount type=volume$(comma)source=minio-data$(comma)target=/mnt/data)
 
 run-mc:
-	$(call run,mc,)
+	$(call run,mc)
 
 define attach
 	podman exec -it $(1) bash

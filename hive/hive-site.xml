@@ -9,8 +9,8 @@
         <value>NOSASL</value>
     </property>
     <property>
-        <name>hive.metastore.warehouse.dir</name>
-        <value>s3a://b001/warehouse</value>
+        <name>hive.s3select-pushdown.enabled</name>
+        <value>true</value>
     </property>
 
     <property>
@@ -27,7 +27,7 @@
     </property>
     <property>
         <name>datanucleus.autoStartMechanismMode</name>
-        <value>checked</value>
+        <value>ignored</value>
     </property>
     <property>
         <name>datanucleus.autoStartMechanism</name>

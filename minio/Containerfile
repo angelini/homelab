@@ -23,8 +23,6 @@ ENV MINIO_UPDATE off
 ENV MINIO_ACCESS_KEY minio_ak
 ENV MINIO_SECRET_KEY minio_sk
 
-ENV MINIO_HTTP_TRACE /dev/stdout
-
 ENTRYPOINT ["minio", "server", \
             "--address", ":8005", \
             "/mnt/data/minio"]

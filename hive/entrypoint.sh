@@ -21,4 +21,8 @@ if ! database_exists metastore; then
     schematool -initSchema -dbType postgres
 fi
 
+# exec bash
+
+# hiveserver2 start &
 exec hiveserver2 --service metastore
+# exec java org.apache.hadoop.hive.metastore.HiveMetaStore
