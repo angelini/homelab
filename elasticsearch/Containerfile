@@ -1,16 +1,35 @@
 FROM localhost/jdk-11
 
+USER root
+
+VOLUME /mnt/data
+
+RUN mkdir -p /mnt/data/elasticsearch \
+    && chown main:main /mnt/data/elasticsearch
+
+RUN mkdir -p /tmp/elasticsearch \
+    && chown main:main /tmp/elasticsearch
+
+RUN mkdir -p /var/log/elasticsearch \
+    && chown main:main /var/log/elasticsearch
+
 USER main
 
 ARG MIRROR
-ARG ES_VERSION
-ENV ES_VERSION ${ES_VERSION}
 
-RUN curl -Lso es.tar.gz "${MIRROR}/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz" \
-    && tar -xzf es.tar.gz \
-    && mv "elasticsearch-${ES_VERSION}" elasticsearch \
-    && rm es.tar.gz
+ARG ELASTICSEARCH_VERSION
+ENV ELASTICSEARCH_VERSION ${ELASTICSEARCH_VERSION}
+RUN curl -Lfso elasticsearch.tar.gz "${MIRROR}/downloads/elasticsearch/elasticsearch-oss-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz" \
+    && tar -xzf elasticsearch.tar.gz \
+    && mv "elasticsearch-${ELASTICSEARCH_VERSION}" elasticsearch \
+    && rm elasticsearch.tar.gz
 
 ENV ES_HOME /home/main/elasticsearch
+ENV ES_TMPDIR /tmp/elasticsearch
 
 ENV PATH "${ES_HOME}/bin:$PATH"
+
+COPY jvm.options "${ES_HOME}/config/jvm.options"
+COPY elasticsearch.yml "${ES_HOME}/config/elasticsearch.yml"
+
+ENTRYPOINT elasticsearch

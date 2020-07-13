@@ -5,12 +5,13 @@ AWS_SDK_VERSION ?= 1.11.811
 GUAVA_VERSION ?= 29.0
 HIVE_VERSION ?= 3.1.2
 PRESTO_VERSION ?= 337
-ES_VERSION ?= 7.7.0
+ELASTICSEARCH_VERSION ?= 7.8.0
+LOGSTASH_VERSION ?= 7.8.0
 SPARK_VERSION ?= 3.0.0
 MINIO_VERSION ?= 2020-06-22T03-12-50Z
 MC_VERSION ?= 2020-06-20T00-18-43Z
 
-MIRROR_ROOT := /opt/mirror
+MIRROR_ROOT := $(CURDIR)/mirror_cache
 
 HADOOP_PATH := ${MIRROR_ROOT}/hadoop/common/hadoop-${HADOOP_VERSION}
 HADOOP_AWS_PATH := ${MIRROR_ROOT}/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}
@@ -19,7 +20,8 @@ GUAVA_PATH := ${MIRROR_ROOT}/maven2/com/google/guava/guava/${GUAVA_VERSION}-jre
 HIVE_PATH := ${MIRROR_ROOT}/hive/hive-${HIVE_VERSION}
 PRESTO_PATH := ${MIRROR_ROOT}/maven2/com/facebook/presto/presto-server/${PRESTO_VERSION}
 PRESTO_CLI_PATH := ${MIRROR_ROOT}/maven2/com/facebook/presto/presto-cli/${PRESTO_VERSION}
-ES_PATH := ${MIRROR_ROOT}/downloads/elasticsearch
+ELASTICSEARCH_PATH := ${MIRROR_ROOT}/downloads/elasticsearch
+LOGSTASH_PATH := ${MIRROR_ROOT}/downloads/logstash
 SPARK_PATH := ${MIRROR_ROOT}/spark/spark-${SPARK_VERSION}
 MINIO_PATH := ${MIRROR_ROOT}/server/minio/release/linux-amd64/archive
 MC_PATH := ${MIRROR_ROOT}/client/mc/release/linux-amd64/archive
@@ -52,8 +54,11 @@ ${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz:
 ${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar:
 	$(call download_file,${PRESTO_CLI_PATH},presto-cli-${PRESTO_VERSION}-executable.jar,https://repo1.maven.org/maven2/io/prestosql/presto-cli/${PRESTO_VERSION}/presto-cli-${PRESTO_VERSION}-executable.jar)
 
-${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz:
-	$(call download_file,${ES_PATH},elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz,https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz)
+${ELASTICSEARCH_PATH}/elasticsearch-oss-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz:
+	$(call download_file,${ELASTICSEARCH_PATH},elasticsearch-oss-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz,https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz)
+
+${LOGSTASH_PATH}/logstash-oss-${LOGSTASH_VERSION}.tar.gz:
+	$(call download_file,${LOGSTASH_PATH},logstash-oss-${LOGSTASH_VERSION}.tar.gz,https://artifacts.elastic.co/downloads/logstash/logstash-oss-${LOGSTASH_VERSION}.tar.gz)
 
 ${SPARK_PATH}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz:
 	$(call download_file,${SPARK_PATH},spark-${SPARK_VERSION}-bin-without-hadoop.tgz,http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz)
@@ -79,26 +84,27 @@ update-mirror: ${HADOOP_PATH}/hadoop-${HADOOP_VERSION}.tar.gz \
 	${HIVE_PATH}/apache-hive-${HIVE_VERSION}-bin.tar.gz \
 	${PRESTO_PATH}/presto-server-${PRESTO_VERSION}.tar.gz \
 	${PRESTO_CLI_PATH}/presto-cli-${PRESTO_VERSION}-executable.jar \
-	${ES_PATH}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz \
+	${ELASTICSEARCH_PATH}/elasticsearch-oss-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz \
+	${LOGSTASH_PATH}/logstash-oss-${LOGSTASH_VERSION}.tar.gz \
 	${SPARK_PATH}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz \
 	${MINIO_PATH}/minio.RELEASE.${MINIO_VERSION} \
 	${MC_PATH}/mc.RELEASE.${MC_VERSION} \
 	${TAXI_DATA_PATH}
 
 .PHONY: create-pod start-mirror
-.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hadoop build-hive build-elasticsearch build-presto build-presto-cli build-spark build-minio build-mc build-all
-.PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hadoop run-hive run-elasticsearch run-presto run-presto-cli run-spark run-minio run-mc
+.PHONY: build-base build-jdk-8 build-jdk-11 build-postgresql build-hadoop build-hive build-elasticsearch build-logstash build-presto build-presto-cli build-spark build-minio build-mc build-all
+.PHONY: run-base run-jdk-8 run-jdk-11 run-postgresql run-hadoop run-hive run-elasticsearch run-logstash run-presto run-presto-cli run-spark run-minio run-mc
 .PHONY: attach-base attach-hive attach-spark attach-minio
 
 start-mirror: update-mirror
-	dnf -y makecache --setopt=cachedir=/opt/dnfcache
-	python -m http.server 8080 --directory ${MIRROR_ROOT}
+	dnf -y makecache --setopt="cachedir=${MIRROR_ROOT}/dnf"
+	python -m http.server 8080 --directory "${MIRROR_ROOT}"
 
 create-pod:
 	podman pod create -n local -p 8002:8002 -p 8003:8003 -p 8004:8004 -p 8005:8005
 
 define build
-	podman build --file "./$(1)/Containerfile" --tag "$(1)" --network host $(2) --volume "/opt/dnfcache:/var/cache/dnf:O"
+	podman build --file "./$(1)/Containerfile" --tag "$(1)" --network host $(2) --volume "${MIRROR_ROOT}/dnf:/var/cache/dnf:O"
 endef
 
 build-base:
@@ -123,7 +129,11 @@ build-hive: build-hadoop
 
 build-elasticsearch: build-jdk-11
 	$(call build,elasticsearch, \
-		--build-arg "MIRROR=localhost:8080" --build-arg "ES_VERSION=${ES_VERSION}")
+		--build-arg "MIRROR=localhost:8080" --build-arg "ELASTICSEARCH_VERSION=${ELASTICSEARCH_VERSION}")
+
+build-logstash: build-jdk-11
+	$(call build,logstash, \
+		--build-arg "MIRROR=localhost:8080" --build-arg "LOGSTASH_VERSION=${LOGSTASH_VERSION}")
 
 build-presto: build-jdk-11
 	$(call build,presto, \
@@ -173,7 +183,11 @@ run-hive:
 		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data)
 
 run-elasticsearch:
-	$(call run,elasticsearch)
+	$(call run,elasticsearch, \
+		--mount type=tmpfs$(comma)tmpfs-size=4G$(comma)destination=/mnt/data)
+
+run-logstash:
+	$(call run,logstash)
 
 run-presto:
 	$(call run,presto, \

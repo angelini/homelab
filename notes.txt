@@ -69,3 +69,6 @@ sys     1m11.495s
 real    0m56.787s
 user    0m41.333s
 sys     0m16.464s
+
+/etc/containers/registries.conf
+podman run -d --name registry -p 5000:5000 -v /home/alex/containers/registry:/home/alex/containers/registry docker.io/registry:2

@@ -2,10 +2,15 @@ FROM localhost/base
 
 USER root
 
-RUN dnf install -y --nodocs postgresql-server \
-    && dnf clean all
+VOLUME /mnt/data
+
+RUN mkdir -p /mnt/data/postgresql \
+    && chown main:main /mnt/data/postgresql
 
 RUN chown -R main:main /var/run/postgresql
+
+RUN dnf install -y --nodocs postgresql-server \
+    && dnf clean all
 
 COPY zoneinfo "/usr/share/zoneinfo"
 

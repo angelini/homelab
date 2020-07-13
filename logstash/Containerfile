@@ -1,0 +1,18 @@
+FROM localhost/jdk-11
+
+USER main
+
+ARG MIRROR
+
+ARG LOGSTASH_VERSION
+ENV LOGSTASH_VERSION ${LOGSTASH_VERSION}
+RUN curl -Lfso logstash.tar.gz "${MIRROR}/downloads/logstash/logstash-oss-${LOGSTASH_VERSION}.tar.gz" \
+    && tar -xzf logstash.tar.gz \
+    && mv "logstash-${LOGSTASH_VERSION}" logstash \
+    && rm logstash.tar.gz
+
+ENV LOGSTASH_HOME /home/main/logstash
+
+ENV PATH "${LOGSTASH_HOME}/bin:$PATH"
+
+ENTRYPOINT bash
